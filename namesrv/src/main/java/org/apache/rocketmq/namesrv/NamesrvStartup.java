@@ -19,12 +19,14 @@ package org.apache.rocketmq.namesrv;
 import ch.qos.logback.classic.LoggerContext;
 import ch.qos.logback.classic.joran.JoranConfigurator;
 import ch.qos.logback.core.joran.spi.JoranException;
+
 import java.io.BufferedInputStream;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Properties;
 import java.util.concurrent.Callable;
+
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
@@ -41,6 +43,15 @@ import org.apache.rocketmq.srvutil.ServerUtil;
 import org.apache.rocketmq.srvutil.ShutdownHookThread;
 import org.slf4j.LoggerFactory;
 
+/**
+ * NameServer是整个消息队列中的状态服务器,集群的各个组件通过它来了解全局的信息.
+ * 同时,各个角色的机器都要定期向NameServer上报自己的状态,超时不上报的话,NameServer会认为某个机器出故障不可用了,
+ * 其他的组件会把这个机器从可用列表里面移除.
+ * <p>
+ * NameServer可以部署多个,相互之间独立,其他角色同时向多个NameServer机器上报状态信息,从而达到热备份的目的.
+ * NameServer本身是无状态的,也就是说NameServer中的Broker,Topic等状态信息不会持久存储,
+ * 都是由各个角色定时上报并存储到内存中的
+ */
 public class NamesrvStartup {
 
     private static InternalLogger log;
@@ -51,6 +62,16 @@ public class NamesrvStartup {
         main0(args);
     }
 
+    /**
+     * main0()方法主要完成两个功能:
+     * 1:解析命令行参数 重点解析-c 和-p参数
+     * -c:命令行参数用来指定配置文件的配置
+     * -p:命令行参数用来打印所有配置项的值,注意:用-p参数打印配置项的值之后程序就退出了,这是一个帮助调试的选项
+     * 2:初始化NameServer的Controller
+     *
+     * @param args
+     * @return
+     */
     public static NamesrvController main0(String[] args) {
 
         try {
@@ -137,13 +158,19 @@ public class NamesrvStartup {
         if (null == controller) {
             throw new IllegalArgumentException("NamesrvController is null");
         }
-
+        /**
+         * 根据解析出的参数,调用controller.initialize()方法来初始化,然后调用controller.start()方法开启服务
+         *
+         */
         boolean initResult = controller.initialize();
         if (!initResult) {
             controller.shutdown();
             System.exit(-3);
         }
 
+        /**
+         * 注册ShutdownHookThread,当程序退出的时候回调用 controller.shutdown()来做退出前的清理工作
+         */
         Runtime.getRuntime().addShutdownHook(new ShutdownHookThread(log, new Callable<Void>() {
             @Override
             public Void call() throws Exception {
