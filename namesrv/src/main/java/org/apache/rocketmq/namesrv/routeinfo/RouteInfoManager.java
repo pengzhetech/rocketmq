@@ -62,22 +62,30 @@ public class RouteInfoManager {
     private final static long BROKER_CHANNEL_EXPIRED_TIME = 1000 * 60 * 2;
     private final ReadWriteLock lock = new ReentrantReadWriteLock();
     /**
+     * Topic消息队列路由信息,消息发送时根据路由表进行负载均衡
+     * <p>
      * topicQueueTable这个结构的key是Topic名称,他它存储了所有的Topic的属性信息.
      * value是QueueData队列,队列的长度等于这个Topic数据存储的Master Broker的个数
      * QueueData里面存储着Broker的名称,读写queue的数量,同步标识等
      */
     private final HashMap<String/* topic */, List<QueueData>> topicQueueTable;
     /**
+     * Broker基础信息,包含brokerName,所有集群名称,主备Broker地址
+     * <p>
      * 以BrokerName为索引,相同名称的Broker可能存在多台机器,一个Master和多个Slave.
      * 这个结构存储着一个BrokerName对应的属性信息,包括所属的Cluster名称
      * 一个Master Broker和多个Slave Broker的地址信息
      */
     private final HashMap<String/* brokerName */, BrokerData> brokerAddrTable;
     /**
+     * Broker集群信息,存储集群中所有Broker名称.
+     * <p>
      * 存储的是集群中的Cluster信息,结果很简单,就是一个Cluster名称对应一个BrokerName组成的集合
      */
     private final HashMap<String/* clusterName */, Set<String/* brokerName */>> clusterAddrTable;
     /**
+     * broker状态信息,NameServer每次收到心跳包时会替换该信息
+     * <p>
      * 这个结构和brokerAddrTable有关系,但是内容完全不同,这个结构的Key是BrokerAddr,也就是对应着一台机器
      * brokerAddrTable中的key是BrokerName,多个机器的BrokerName可以相同.
      * brokerLiveTable存储的内容就是这台Broker机器的实时状态,包括上次更新状态的时间戳
@@ -85,6 +93,8 @@ public class RouteInfoManager {
      */
     private final HashMap<String/* brokerAddr */, BrokerLiveInfo> brokerLiveTable;
     /**
+     * Broker上的filterServer列表,用于类模式消息过滤
+     * <p>
      * filterServerTable是过滤服务器,是RocketMQ的一种服务端过滤方式,一个Broker可以有一个或者多个Filter Server
      * 这个结构的key事Broker的地址,Value是和这个Broker关联的多个Filter Server的地址
      */
@@ -777,6 +787,9 @@ public class RouteInfoManager {
 }
 
 class BrokerLiveInfo {
+    /**
+     * 存储上次收到Broker心跳包的时间
+     */
     private long lastUpdateTimestamp;
     private DataVersion dataVersion;
     private Channel channel;

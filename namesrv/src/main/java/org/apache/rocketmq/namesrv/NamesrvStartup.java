@@ -101,7 +101,7 @@ public class NamesrvStartup {
         }
 
         final NamesrvConfig namesrvConfig = new NamesrvConfig();
-        namesrvConfig.setRocketmqHome("/Users/pengzhe/code/Project/rocketmq");
+        //  namesrvConfig.setRocketmqHome("/Users/pengzhe/code/Project/rocketmq");
         final NettyServerConfig nettyServerConfig = new NettyServerConfig();
         nettyServerConfig.setListenPort(9876);
         if (commandLine.hasOption('c')) {
@@ -179,6 +179,9 @@ public class NamesrvStartup {
             }
         }));
 
+        /**
+         * 启动NameServer,以便监听Broker,消息生产者的网络请求
+         */
         controller.start();
 
         return controller;
